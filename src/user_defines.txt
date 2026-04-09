@@ -25,8 +25,8 @@
 #-DRegulatory_Domain_US_433
 #-DRegulatory_Domain_US_433_WIDE
 #-DRegulatory_Domain_FCC_915
-#-DRegulatory_Domain_ISM_2400
-#-DRegulatory_Domain_EU_CE_2400
+-DRegulatory_Domain_ISM_2400    # SimpliFly 2G4 TX — 2.4 GHz ISM band (global)
+#-DRegulatory_Domain_EU_CE_2400 # Uncomment instead for CE-certified EU products (LBT enabled, power capped)
 
 ### PERFORMANCE OPTIONS: ###
 
