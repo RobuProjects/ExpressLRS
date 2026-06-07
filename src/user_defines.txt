@@ -61,7 +61,12 @@
 ### Debugging options ###
 
 # Turn on debug messages, if disabled then all debugging options (starting with DEBUG_) are disabled
--DDEBUG_LOG
+# WARNING: On ESP32-S3 TX, LOGGING_UART is hard-mapped to `Serial` (UART0 = GPIO43/44),
+# which is the SAME physical wire as serial_tx/serial_rx (CRSF link to the handset).
+# Enabling DEBUG_LOG injects ASCII print traffic into the CRSF byte stream and breaks
+# all CRSF parsing in both directions (no PARAM_WRITE, no Bind, no telemetry).
+# Keep this DISABLED unless ESP32_S3_USB_JTAG_ENABLED is also defined (then debug routes via USB-CDC).
+#-DDEBUG_LOG
 
 # For an ESP32S3 MCU, there are two options:
 # 1 - Pull-up on GPIO3, USB for JTAG (on MI_02), debug logging uses main UART.
