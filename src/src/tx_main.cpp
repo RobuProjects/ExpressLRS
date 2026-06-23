@@ -804,6 +804,26 @@ static void ConfigChangeCommit()
   devicesTriggerEvent(changes);
 }
 
+// Bounded wait for the current RF transmission to finish. busyTransmitting is
+// cleared by TXdoneISR when the radio's TX-done IRQ fires. Cap the wait so a
+// missed/late TX-done (observed on LR1121) cannot spin here forever and hang
+// the module. 50ms is far longer than any single packet's time-on-air, so this
+// never triggers during normal transmission; the caller reconfigures the radio
+// immediately after, which restores a known state.
+static void waitForTxComplete()
+{
+  constexpr uint32_t TX_COMPLETE_TIMEOUT_US = 50000;
+  const uint32_t start = micros();
+  while (busyTransmitting)
+  {
+    if ((uint32_t)(micros() - start) > TX_COMPLETE_TIMEOUT_US)
+    {
+      busyTransmitting = false;
+      break;
+    }
+  }
+}
+
 static void CheckConfigChangePending()
 {
   if (config.IsModified() || ModelUpdatePending)
@@ -812,8 +832,8 @@ static void CheckConfigChangePending()
     if (syncSpamCounter > 0)
       return;
 
-    // wait until no longer transmitting
-    while (busyTransmitting);
+    // wait until no longer transmitting (bounded so a missed TX-done IRQ can't hang the module)
+    waitForTxComplete();
     // Set the commitInProgress flag to prevent any other RF SPI traffic during the commit from RX or scheduled TX
     commitInProgress = true;
     // If telemetry expected in the next interval, the radio was in RX mode
@@ -1006,6 +1026,21 @@ void SendUIDOverMSP()
   DataUlSender.SetDataToTransmit(MSPDataPackage, 5);
 }
 
+#if defined(RADIO_LR1121)
+// True while the current binding session transmits exclusively on the 2.4GHz band.
+// Set when the configured air rate is 2.4GHz-only so a 2.4GHz-only RX (e.g. RadioMaster XR4)
+// receives the entire bind window instead of only the brief 2.4GHz half of the 900->2.4 sweep.
+static bool bindUsing2G4Only = false;
+
+static bool isConfig2G4Only()
+{
+    expresslrs_mod_settings_s *const cfg = get_elrs_airRateConfig(config.GetRate());
+    return cfg != nullptr &&
+           (cfg->radio_type == RADIO_TYPE_LR1121_LORA_2G4 ||
+            cfg->radio_type == RADIO_TYPE_LR1121_GFSK_2G4);
+}
+#endif
+
 static void EnterBindingMode()
 {
   if (InBindingMode)
@@ -1013,7 +1048,7 @@ static void EnterBindingMode()
 
   // Disable the TX timer and wait for any TX to complete
   hwTimer::stop();
-  while (busyTransmitting);
+  waitForTxComplete();
 
   // Queue up sending the Master UID as MSP packets
   SendUIDOverMSP();
@@ -1025,7 +1060,15 @@ static void EnterBindingMode()
 
   // Start attempting to bind
   // Lock the RF rate and freq while binding
+#if defined(RADIO_LR1121)
+  // When the operator has selected a 2.4GHz-only air rate, bind entirely on 2.4GHz so a
+  // 2.4GHz-only RX receives a continuous bind signal (the default sweep spends the first
+  // half on 900MHz, which such an RX cannot hear).
+  bindUsing2G4Only = isConfig2G4Only();
+  SetRFLinkRate(enumRatetoIndex(bindUsing2G4Only ? RATE_DUALBAND_BINDING : RATE_BINDING));
+#else
   SetRFLinkRate(enumRatetoIndex(RATE_BINDING));
+#endif
 
   // Start transmitting again
   hwTimer::resume();
@@ -1565,8 +1608,9 @@ void loop()
   if (InBindingMode)
   {
 #if defined(RADIO_LR1121)
-    // Send half of the bind packets on the 2.4GHz domain
-    if (BindingSendCount == BindingSpamAmount / 2) {
+    // Send half of the bind packets on the 2.4GHz domain (dual/900 configs only; a
+    // 2.4GHz-only config already binds entirely on 2.4GHz for the whole window).
+    if (!bindUsing2G4Only && BindingSendCount == BindingSpamAmount / 2) {
       SetRFLinkRate(enumRatetoIndex(RATE_DUALBAND_BINDING));
       // Increment BindingSendCount so that SetRFLinkRate is only called once.
       BindingSendCount++;

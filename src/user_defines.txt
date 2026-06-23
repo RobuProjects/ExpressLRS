@@ -20,10 +20,10 @@
 # Required for LR1121 dual-band builds (SimpliFly_Dual_ELRS_TX / RX).
 # SX128x (2.4 GHz) builds are unaffected — targets.h forces ISM_2400 for SX128x.
 # Choose ONE 900MHz domain for your region:
--DRegulatory_Domain_FCC_915
+#-DRegulatory_Domain_FCC_915
 #-DRegulatory_Domain_EU_868
 #-DRegulatory_Domain_AU_915
-#-DRegulatory_Domain_IN_866
+-DRegulatory_Domain_IN_866
 #-DRegulatory_Domain_AU_433
 #-DRegulatory_Domain_EU_433
 #-DRegulatory_Domain_US_433

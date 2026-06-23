@@ -641,6 +641,12 @@ void TXModuleEndpoint::SetPacketRateIdx(uint8_t idx, bool forceChange)
     return;
 
   uint8_t actualRate = adjustPacketRateForBaud(idx);
+  // adjustPacketRateForBaud() walks forward and can return RATE_MAX (or land on an
+  // unsupported Dual-band index) when the requested rate has no supported/baud-compatible
+  // match. Never persist such a value: on the next boot Config::Load() would see an
+  // unsupported rate and silently fall back to a different RF band.
+  if (actualRate >= RATE_MAX || !isSupportedRFRate(actualRate))
+    return;
   // No change, don't do anything
   if (actualRate == ExpressLRS_currAirRate_Modparams->index)
     return;
@@ -840,7 +846,12 @@ void TXModuleEndpoint::registerParameters()
                 SetPacketRateIdx(i, true);
                 break;
               }
-              if (rfMode == RF_MODE_2G4 && (radio_type == RADIO_TYPE_LR1121_GFSK_2G4 || radio_type == RADIO_TYPE_LR1121_LORA_2G4))
+              // Prefer a 2.4GHz LoRa rate over GFSK: SX1280 receivers (e.g. RadioMaster XR4)
+              // implement the 2.4GHz "1000Hz" tier as FLRC, which is NOT over-the-air
+              // compatible with the LR1121's GFSK_2G4 modulation. The LR1121 LORA_2G4 rates
+              // do match the SX1280 LoRa rates, so default the band to LoRa for interop.
+              // (GFSK_2G4 is still selectable directly via the Packet Rate menu.)
+              if (rfMode == RF_MODE_2G4 && radio_type == RADIO_TYPE_LR1121_LORA_2G4)
               {
                 SetPacketRateIdx(i, true);
                 break;
