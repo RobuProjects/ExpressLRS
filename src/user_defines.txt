@@ -17,7 +17,7 @@
 ### REGULATORY DOMAIN: ###
 
 # Domain is used to define correct frequency band for 900MHz hardware.
-# Required for LR1121 dual-band builds (SimpliFly_Dual_ELRS_TX / RX).
+# Required for 900MHz and LR1121 dual-band builds.
 # SX128x (2.4 GHz) builds are unaffected — targets.h forces ISM_2400 for SX128x.
 # Choose ONE 900MHz domain for your region:
 #-DRegulatory_Domain_FCC_915

@@ -249,7 +249,7 @@ void TxConfig::Load()
 
             // validate the currently selected rate is supported by the hardware and choose an appropriate default if not
             if (!isSupportedRFRate(m_config.model_config[i].rate)) {
-                // SimpliFly Dual: recover to a 2.4GHz LoRa rate (not 900MHz) whenever the
+                // Dual-band hardware: recover to a 2.4GHz LoRa rate (not 900MHz) whenever the
                 // hardware has a 2.4GHz path, so a corrupted/unsupported saved rate heals to a
                 // band that 2.4GHz-only receivers (e.g. RadioMaster XR4) can actually hear.
                 m_config.model_config[i].rate = enumRatetoIndex(POWER_OUTPUT_VALUES_DUAL_COUNT != 0 ? RATE_LORA_2G4_250HZ : RATE_LORA_900_200HZ);
@@ -750,7 +750,7 @@ TxConfig::SetDefaults(bool commit)
         #if defined(RADIO_SX127X)
             SetRate(enumRatetoIndex(RATE_LORA_900_200HZ));
         #elif defined(RADIO_LR1121)
-            // SimpliFly Dual: default to 2.4GHz so a fresh config / factory-reset binds with
+            // Dual-band hardware: default to 2.4GHz so a fresh config / factory-reset binds with
             // 2.4GHz-only receivers (e.g. RadioMaster XR4) out of the box. 900MHz is still
             // selectable at runtime via the "RF Band" menu.
             SetRate(enumRatetoIndex(RATE_LORA_2G4_250HZ));

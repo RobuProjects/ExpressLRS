@@ -8,3 +8,6 @@ src/.vscode
 src/data/*.ini
 src/data/*.json
 src/hardware
+
+# SimpliFly release output (simplifly/build_simplifly_release.sh)
+/release/
