@@ -38,9 +38,16 @@ The images are written to `release/<family>/<environment>/`. Each folder has
 the separate parts (`bootloader.bin`, `partitions.bin`, `boot_app0.bin`,
 `firmware.bin`) and a merged `<env>_full_flash.bin`.
 
+Releases are tagged `<ExpressLRS base>-SF<SimpliFly version>`, for example
+`4.0.0-SF1.0.0` = ExpressLRS 4.0.0 with the SimpliFly 1.0.0 changes.
+The build embeds the tag as the firmware version, shown on the device's WiFi
+page and in the ELRS Lua / handset ELRS Config, so a user can always see
+which ExpressLRS release their radio is based on. Keep tags within 20
+characters: ELRS shortens longer versions in the Lua menu.
+
 To build the exact firmware of a shipped release, check out its tag first
-(for example `git checkout simplifly-2g4-v1.0.0`) and use the targets commit
-recorded in that release's notes.
+(for example `git checkout 4.0.0-SF1.0.0`); the targets repository
+carries the same tag.
 
 ## Installing your own build
 
