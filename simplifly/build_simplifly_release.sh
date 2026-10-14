@@ -87,29 +87,26 @@ build_and_package() {
 
     pushd "$ELRS_DIR" >/dev/null
 
-    echo "Building environments..."
+    mkdir -p "$out_dir"
+    rm -rf "${out_dir:?}"/*
+
+    # Build, merge and collect one environment at a time: PlatformIO wipes
+    # the other environments' build folders whenever its project checksum
+    # changes (e.g. while libraries install on a fresh clone), so outputs
+    # must be taken right after each build.
     for env_name in "${envs[@]}"; do
         echo "- $env_name"
         "$PIO_BIN" run -e "$env_name"
-    done
 
-    echo "Creating merged full-flash images..."
-    for env_name in "${envs[@]}"; do
-        local build_dir="$ELRS_DIR/.pio/build/$env_name"
-        python3 "$ESPTOOL_PY" --chip esp32s3 merge_bin \
-            -o "$build_dir/${env_name}_full_flash.bin" \
-            --flash_mode qio --flash_freq 80m --flash_size 8MB \
-            0x0000 "$build_dir/bootloader.bin" \
-            0x8000 "$build_dir/partitions.bin" \
-            0xe000 "$build_dir/boot_app0.bin" \
-            0x10000 "$build_dir/firmware.bin"
-    done
-
-    echo "Collecting artifacts into $out_dir ..."
-    mkdir -p "$out_dir"
-    rm -rf "${out_dir:?}"/*
-    for env_name in "${envs[@]}"; do
         local src_dir="$ELRS_DIR/.pio/build/$env_name"
+        python3 "$ESPTOOL_PY" --chip esp32s3 merge_bin \
+            -o "$src_dir/${env_name}_full_flash.bin" \
+            --flash_mode qio --flash_freq 80m --flash_size 8MB \
+            0x0000 "$src_dir/bootloader.bin" \
+            0x8000 "$src_dir/partitions.bin" \
+            0xe000 "$src_dir/boot_app0.bin" \
+            0x10000 "$src_dir/firmware.bin"
+
         local dst_dir="$out_dir/$env_name"
         mkdir -p "$dst_dir"
 
